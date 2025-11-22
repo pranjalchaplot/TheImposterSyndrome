@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Imposter Syndrome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            animation: {
+              'fade-in': 'fadeIn 0.4s ease-out',
+              'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'bounce-slight': 'bounceSlight 2s infinite',
+              'float': 'float 3s ease-in-out infinite',
+              'glitch': 'glitch 1s linear infinite',
+              'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(100%)' },
+                '100%': { transform: 'translateY(0)' },
+              },
+              bounceSlight: {
+                '0%, 100%': { transform: 'translateY(-5%)' },
+                '50%': { transform: 'translateY(0)' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0px)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              pop: {
+                '0%': { transform: 'scale(0.8)' },
+                '100%': { transform: 'scale(1)' },
+              },
+              glitch: {
+                '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                '62%': { transform: 'translate(0,0) skew(5deg)' },
+              }
+            },
+            colors: {
+              brand: {
+                dark: '#09090b', // Zinc 950
+                card: '#18181b', // Zinc 900
+                surface: '#27272a', // Zinc 800
+                primary: '#8b5cf6', // Violet 500
+                primaryHover: '#7c3aed', // Violet 600
+                secondary: '#ec4899', // Pink 500
+                accent: '#06b6d4', // Cyan 500
+                success: '#22c55e', // Green 500
+                danger: '#ef4444', // Red 500
+                warning: '#f59e0b', // Amber 500
+              }
+            }
+          },
+        },
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-brand-dark text-slate-200 antialiased overflow-hidden fixed inset-0 select-none">
+    <div id="root" class="h-full w-full overflow-y-auto custom-scrollbar"></div>
+    <style>
+      /* Disable Tap Highlights globally for mobile */
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
+      /* Disable Text Selection Background globally */
+      ::selection {
+        background: transparent;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #3f3f46;
+        border-radius: 20px;
+      }
+
+      /* 3D Card Flip */
+      .perspective-1000 {
+        perspective: 1000px;
+      }
+      .transform-style-3d {
+        transform-style: preserve-3d;
+      }
+      .backface-hidden {
+        backface-visibility: hidden;
+      }
+      .rotate-y-180 {
+        transform: rotateY(180deg);
+      }
+
+      /* 3D Dice Styles */
+      .dice-scene {
+        perspective: 600px;
+        width: 40px;
+        height: 40px;
+      }
+      .dice {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .dice-face {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: linear-gradient(145deg, #ffffff, #e2e8f0);
+        border: 1px solid #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #334155;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        backface-visibility: hidden;
+      }
+      /* Face Transforms */
+      .face-front  { transform: rotateY(0deg) translateZ(20px); }
+      .face-back   { transform: rotateY(180deg) translateZ(20px); }
+      .face-right  { transform: rotateY(90deg) translateZ(20px); }
+      .face-left   { transform: rotateY(-90deg) translateZ(20px); }
+      .face-top    { transform: rotateX(90deg) translateZ(20px); }
+      .face-bottom { transform: rotateX(-90deg) translateZ(20px); }
+
+      /* Robot Animation */
+      .robot-head {
+        transition: transform 0.3s ease;
+      }
+      .robot-head:hover {
+        transform: translateY(-5px);
+      }
+    </style>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
