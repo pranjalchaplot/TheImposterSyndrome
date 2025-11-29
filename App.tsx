@@ -12,7 +12,7 @@ const App: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
-  const [winner, setWinner] = useState<'CREW' | 'IMPOSTER' | null>(null);
+  const [winner, setWinner] = useState<'CREW' | 'IMPOSTER' | 'JESTER' | null>(null);
 
   // Initialize Game
   const startGame = async (names: string[], newSettings: GameSettings) => {
@@ -33,12 +33,22 @@ const App: React.FC = () => {
     
     const imposterIndices = new Set(indices.slice(0, newSettings.imposterCount));
 
+    // Assign Jester from non-imposters if enabled
+    let jesterIndex: number | null = null;
+    if (newSettings.extraRoles.jesterEnabled) {
+      const nonImposterIndices = indices.filter(idx => !imposterIndices.has(idx));
+      if (nonImposterIndices.length > 0) {
+        jesterIndex = nonImposterIndices[Math.floor(Math.random() * nonImposterIndices.length)];
+      }
+    }
+
     const newPlayers: Player[] = names.map((name, idx) => ({
       id: crypto.randomUUID(),
       name,
       isImposter: imposterIndices.has(idx),
       isDead: false,
-      avatarSeed: Math.floor(Math.random() * 1000)
+      avatarSeed: Math.floor(Math.random() * 1000),
+      extraRole: idx === jesterIndex ? 'JESTER' : null
     }));
 
     setPlayers(newPlayers);
@@ -47,10 +57,19 @@ const App: React.FC = () => {
 
   // Handle Player Death/Ejection directly from Play Phase
   const handlePlayerEjection = (ejectedPlayerId: string) => {
+    const ejectedPlayer = players.find(p => p.id === ejectedPlayerId);
+    
     const updatedPlayers = players.map(p => 
       p.id === ejectedPlayerId ? { ...p, isDead: true } : p
     );
     setPlayers(updatedPlayers);
+    
+    // Check Jester Win Condition FIRST
+    if (ejectedPlayer?.extraRole === 'JESTER') {
+      setWinner('JESTER' as any); // Jester wins
+      setPhase(GamePhase.GAME_OVER);
+      return;
+    }
     
     // Check Win Conditions
     const activeImposters = updatedPlayers.filter(p => p.isImposter && !p.isDead).length;

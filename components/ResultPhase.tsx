@@ -13,7 +13,7 @@ declare global {
 interface GameOverPhaseProps {
   players: Player[];
   gameData: GameData;
-  winner: 'CREW' | 'IMPOSTER';
+  winner: 'CREW' | 'IMPOSTER' | 'JESTER';
   onReset: () => void;
 }
 
@@ -22,7 +22,9 @@ export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ players, gameData,
 
   useEffect(() => {
     if (window.confetti) {
-      const colors = winner === 'CREW' ? ['#8b5cf6', '#06b6d4'] : ['#ef4444', '#ec4899'];
+      const colors = winner === 'CREW' ? ['#8b5cf6', '#06b6d4'] : 
+                     winner === 'JESTER' ? ['#eab308', '#f59e0b', '#fbbf24'] :
+                     ['#ef4444', '#ec4899'];
       window.confetti({
           particleCount: 100,
           spread: 70,
@@ -35,8 +37,13 @@ export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ players, gameData,
 
   // Sort players: Winners first, then others.
   const sortedPlayers = [...players].sort((a, b) => {
+    // If Jester won, Jester comes first
+    if (winner === 'JESTER') {
+      if (a.extraRole === 'JESTER' && b.extraRole !== 'JESTER') return -1;
+      if (a.extraRole !== 'JESTER' && b.extraRole === 'JESTER') return 1;
+    }
     // If crew won, crew comes first
-    if (winner === 'CREW') {
+    else if (winner === 'CREW') {
         if (!a.isImposter && b.isImposter) return -1;
         if (a.isImposter && !b.isImposter) return 1;
     } else {
@@ -92,20 +99,30 @@ export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ players, gameData,
       {/* Capture Container */}
       <div id="mission-report" className="flex-1 flex flex-col items-center pt-8 bg-brand-dark p-4 rounded-xl">
         
-        <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-2xl ${winner === 'CREW' ? 'bg-brand-primary text-white shadow-brand-primary/40' : 'bg-brand-danger text-white shadow-brand-danger/40'}`}>
+        <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-2xl ${
+          winner === 'CREW' ? 'bg-brand-primary text-white shadow-brand-primary/40' : 
+          winner === 'JESTER' ? 'bg-yellow-500 text-white shadow-yellow-500/40' :
+          'bg-brand-danger text-white shadow-brand-danger/40'
+        }`}>
           {winner === 'CREW' ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          ) : winner === 'JESTER' ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a8 8 0 0 0-5 2 8 8 0 0 0-5-2H2Z"/><path d="M6 11c1.5 0 3 .5 3 2-2 0-3 0-3-2Z"/><path d="M18 11c-1.5 0-3 .5-3 2 2 0 3 0 3-2Z"/></svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 22h20"/><path d="M12 2v17"/><path d="m9 5 6 6"/><path d="m15 5-6 6"/></svg>
           )}
         </div>
 
         {/* Replaced Gradient Text with Solid Color to fix Screenshot Bug */}
-        <h1 className={`text-5xl font-black mb-2 tracking-tighter uppercase ${winner === 'CREW' ? 'text-brand-primary' : 'text-brand-danger'}`}>
-          {winner === 'CREW' ? 'Agents Win' : 'Imposters Win'}
+        <h1 className={`text-5xl font-black mb-2 tracking-tighter uppercase ${
+          winner === 'CREW' ? 'text-brand-primary' : 
+          winner === 'JESTER' ? 'text-yellow-500' :
+          'text-brand-danger'
+        }`}>
+          {winner === 'CREW' ? 'Agents Win' : winner === 'JESTER' ? 'Jester Wins' : 'Imposters Win'}
         </h1>
         <p className="text-slate-400 mb-8 text-lg">
-          {winner === 'CREW' ? 'The facility is secure.' : 'Sabotage complete.'}
+          {winner === 'CREW' ? 'The facility is secure.' : winner === 'JESTER' ? 'Chaos reigns supreme!' : 'Sabotage complete.'}
         </p>
 
         {/* Word Reveal */}
@@ -117,7 +134,9 @@ export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ players, gameData,
         {/* Player Grid */}
         <div className="w-full grid grid-cols-2 gap-3 mb-8">
             {sortedPlayers.map(p => {
-                const isWinner = (winner === 'CREW' && !p.isImposter) || (winner === 'IMPOSTER' && p.isImposter);
+                const isWinner = (winner === 'CREW' && !p.isImposter && p.extraRole !== 'JESTER') || 
+                                 (winner === 'IMPOSTER' && p.isImposter) ||
+                                 (winner === 'JESTER' && p.extraRole === 'JESTER');
                 
                 return (
                     <div 
@@ -135,10 +154,14 @@ export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ players, gameData,
 
                         <div className="flex flex-col items-start overflow-hidden">
                             <span className={`text-sm font-bold truncate w-full text-left ${p.isDead ? 'text-slate-500 line-through' : isWinner ? 'text-white' : 'text-slate-400'}`}>{p.name}</span>
-                            {/* Role Text instead of Icon */}
-                            <span className={`text-[10px] uppercase font-bold tracking-wider ${p.isImposter ? 'text-rose-500' : 'text-blue-500'}`}>
-                              {p.isImposter ? 'Imposter' : 'Agent'}
-                            </span>
+                            {/* Role Text - Jester takes priority over Agent/Imposter */}
+                            {p.extraRole === 'JESTER' ? (
+                              <span className="text-[10px] uppercase font-bold tracking-wider text-yellow-500">Jester</span>
+                            ) : (
+                              <span className={`text-[10px] uppercase font-bold tracking-wider ${p.isImposter ? 'text-rose-500' : 'text-blue-500'}`}>
+                                {p.isImposter ? 'Imposter' : 'Agent'}
+                              </span>
+                            )}
                         </div>
                     </div>
                 );

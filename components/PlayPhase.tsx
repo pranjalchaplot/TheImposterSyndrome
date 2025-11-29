@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Player, GameData, GameSettings } from '../types';
+import { Player, GameData, GameSettings, ExtraRole } from '../types';
 import { Button } from './ui/Button';
 
 interface PlayPhaseProps {
@@ -17,7 +17,7 @@ export const PlayPhase: React.FC<PlayPhaseProps> = ({ players, gameData, setting
   
   // Voting Interaction State
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [revealPopupData, setRevealPopupData] = useState<{name: string, isImposter: boolean} | null>(null);
+  const [revealPopupData, setRevealPopupData] = useState<{name: string, isImposter: boolean, extraRole: ExtraRole} | null>(null);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -55,7 +55,8 @@ export const PlayPhase: React.FC<PlayPhaseProps> = ({ players, gameData, setting
     // Show the result popup LOCALLY first before calling onEject (which might refresh UI or end game)
     setRevealPopupData({
       name: player.name,
-      isImposter: player.isImposter
+      isImposter: player.isImposter,
+      extraRole: player.extraRole
     });
     setSelectedPlayerId(null); // Close confirm modal
   };
@@ -92,7 +93,11 @@ export const PlayPhase: React.FC<PlayPhaseProps> = ({ players, gameData, setting
       {revealPopupData && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
             <div className="w-full max-w-sm text-center">
-                <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl border-4 ${revealPopupData.isImposter && settings.revealRoleOnDeath ? 'bg-brand-danger border-rose-500' : 'bg-slate-700 border-slate-600'}`}>
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl border-4 ${
+                  revealPopupData.extraRole === 'JESTER' && settings.revealRoleOnDeath ? 'bg-yellow-500 border-yellow-400' :
+                  revealPopupData.isImposter && settings.revealRoleOnDeath ? 'bg-brand-danger border-rose-500' : 
+                  'bg-slate-700 border-slate-600'
+                }`}>
                    <span className="text-4xl font-bold text-white">{revealPopupData.name.charAt(0)}</span>
                 </div>
 
@@ -100,12 +105,27 @@ export const PlayPhase: React.FC<PlayPhaseProps> = ({ players, gameData, setting
                 <p className="text-lg text-rose-500 font-bold mb-8">was ejected.</p>
 
                 {settings.revealRoleOnDeath ? (
-                <div className={`w-full p-6 rounded-2xl border mb-8 animate-pop ${revealPopupData.isImposter ? 'bg-rose-900/20 border-brand-danger' : 'bg-brand-primary/10 border-brand-primary'}`}>
-                    <p className="text-xs uppercase font-bold tracking-widest mb-2 opacity-70">Identity Confirmed</p>
-                    <p className={`text-3xl font-black ${revealPopupData.isImposter ? 'text-brand-danger' : 'text-brand-primary'}`}>
-                        {revealPopupData.isImposter ? 'IMPOSTER' : 'INNOCENT'}
-                    </p>
-                </div>
+                <>
+                  <div className={`w-full p-6 rounded-2xl border mb-4 animate-pop ${
+                    revealPopupData.isImposter ? 'bg-rose-900/20 border-brand-danger' : 
+                    'bg-brand-primary/10 border-brand-primary'
+                  }`}>
+                      <p className="text-xs uppercase font-bold tracking-widest mb-2 opacity-70">Identity Confirmed</p>
+                      <p className={`text-3xl font-black ${revealPopupData.isImposter ? 'text-brand-danger' : 'text-brand-primary'}`}>
+                          {revealPopupData.isImposter ? 'IMPOSTER' : 'INNOCENT'}
+                      </p>
+                  </div>
+                  
+                  {revealPopupData.extraRole === 'JESTER' && (
+                    <div className="w-full p-4 rounded-2xl border border-yellow-500 bg-yellow-500/20 mb-8 animate-pop">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a8 8 0 0 0-5 2 8 8 0 0 0-5-2H2Z"/><path d="M6 11c1.5 0 3 .5 3 2-2 0-3 0-3-2Z"/><path d="M18 11c-1.5 0-3 .5-3 2 2 0 3 0 3-2Z"/></svg>
+                        <p className="text-yellow-500 font-black text-xl uppercase tracking-wider">JESTER</p>
+                      </div>
+                      <p className="text-yellow-300 text-sm font-bold">They got what they wanted!</p>
+                    </div>
+                  )}
+                </>
                 ) : (
                 <div className="w-full p-6 rounded-2xl border border-slate-700 bg-brand-surface mb-8">
                     <p className="text-slate-400 italic">Identity remains unknown...</p>

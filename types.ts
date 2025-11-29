@@ -7,6 +7,8 @@ export enum GamePhase {
   GAME_OVER = 'GAME_OVER' // Final winner
 }
 
+export type ExtraRole = 'JESTER' | null;
+
 export interface GameSettings {
   timerDuration: number; // in seconds, 0 = no timer
   imposterCount: number;
@@ -16,7 +18,10 @@ export interface GameSettings {
   // If "LOCAL_RANDOM" -> Local Random
   // If matches key in WORD_BANK -> Local Specific
   // Else -> AI Custom Prompt
-  targetCategory: string; 
+  targetCategory: string;
+  extraRoles: {
+    jesterEnabled: boolean;
+  };
 }
 
 export interface Player {
@@ -25,6 +30,7 @@ export interface Player {
   isImposter: boolean;
   isDead: boolean;
   avatarSeed: number;
+  extraRole: ExtraRole;
 }
 
 export interface GameData {
@@ -40,5 +46,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   imposterCount: 1,
   revealRoleOnDeath: true,
   imposterTeaming: false, // Default: Disabled
-  targetCategory: "LOCAL_RANDOM" // Default: Offline Deck
+  targetCategory: "LOCAL_RANDOM", // Default: Offline Deck
+  extraRoles: {
+    jesterEnabled: false
+  }
 };

@@ -65,11 +65,11 @@ export const RevealPhase: React.FC<RevealPhaseProps> = ({ players, gameData, set
 
       <div className="flex-1 flex flex-col items-center justify-center w-full perspective-1000">
         
-        {/* Card Container with Flip Logic */}
-        <div className={`relative w-full aspect-[3/4] transition-transform duration-700 transform-style-3d ${isRevealed ? 'rotate-y-180' : ''}`}>
+        {/* Card Container with Flip Logic - Dynamic Height */}
+        <div className={`relative w-full max-w-md transition-transform duration-700 transform-style-3d ${isRevealed ? 'rotate-y-180' : ''}`}>
             
             {/* Front of Card (Pass to Player) */}
-            <div className="absolute inset-0 backface-hidden bg-brand-card rounded-3xl border border-slate-700 shadow-2xl flex flex-col items-center justify-center p-8 relative overflow-hidden">
+            <div className="backface-hidden bg-brand-card rounded-3xl border border-slate-700 shadow-2xl flex flex-col items-center justify-center p-8 relative min-h-[500px]">
                 
                 {/* Decor - Scanning lines */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
@@ -104,26 +104,36 @@ export const RevealPhase: React.FC<RevealPhaseProps> = ({ players, gameData, set
             </div>
 
             {/* Back of Card (Role Reveal) */}
-            <div className="absolute inset-0 backface-hidden rotate-y-180 bg-slate-950 rounded-3xl border border-slate-800 shadow-2xl flex flex-col items-center justify-center p-6 overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 backface-hidden rotate-y-180 bg-slate-950 rounded-3xl border border-slate-800 shadow-2xl flex flex-col p-6 min-h-[500px]">
                 
-                <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
+                <div className="flex-1 flex flex-col items-center justify-start w-full relative z-10 py-4">
                     
-                    <div className="mb-8 scale-110">
+                    <div className="mb-6 scale-110">
                         {currentPlayer.isImposter ? <ImposterIcon /> : <CivilianIcon />}
                     </div>
 
-                    <h3 className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-3 select-none pointer-events-none">
+                    <h3 className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-2 select-none pointer-events-none">
                         Role Info
                     </h3>
                     
                     {/* Reduced Font Size Here */}
-                    <h2 className={`text-xl font-black mb-8 tracking-wide select-none pointer-events-none ${currentPlayer.isImposter ? 'text-rose-600' : 'text-blue-400'}`}>
-                        {currentPlayer.isImposter ? 'IMPOSTER' : 'AGENT'}
+                    <h2 className={`text-xl font-black mb-6 tracking-wide select-none pointer-events-none ${currentPlayer.isImposter ? 'text-rose-600' : currentPlayer.extraRole === 'JESTER' ? 'text-yellow-400' : 'text-blue-400'}`}>
+                        {currentPlayer.isImposter ? 'IMPOSTER' : currentPlayer.extraRole === 'JESTER' ? 'NEUTRAL' : 'AGENT'}
                     </h2>
 
-                    <div className="w-full bg-white/5 rounded-xl p-5 border border-white/10 text-center backdrop-blur-sm">
+                    {/* Extra Role Badge */}
+                    {currentPlayer.extraRole === 'JESTER' && (
+                      <div className="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                        <div className="flex items-center gap-2 justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a8 8 0 0 0-5 2 8 8 0 0 0-5-2H2Z"/><path d="M6 11c1.5 0 3 .5 3 2-2 0-3 0-3-2Z"/><path d="M18 11c-1.5 0-3 .5-3 2 2 0 3 0 3-2Z"/></svg>
+                          <span className="text-yellow-500 font-black text-sm uppercase tracking-wider">JESTER</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="w-full bg-white/5 rounded-xl p-4 border border-white/10 text-center backdrop-blur-sm">
                         {currentPlayer.isImposter ? (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             <p className="text-rose-400 text-sm font-bold uppercase tracking-wide select-none">Mission: Sabotage</p>
                             
                             {/* Imposter Teaming Display */}
@@ -138,12 +148,20 @@ export const RevealPhase: React.FC<RevealPhaseProps> = ({ players, gameData, set
 
                             <div className="h-px w-full bg-white/10 my-2"></div>
                             <p className="text-[10px] text-slate-500 uppercase tracking-widest select-none">Topic Reference</p>
-                            <p className="text-white font-bold text-lg select-none">{gameData.category}</p>
+                            <p className="text-white font-bold text-base select-none">{gameData.category}</p>
+                        </div>
+                        ) : currentPlayer.extraRole === 'JESTER' ? (
+                        <div className="space-y-2">
+                            <p className="text-yellow-400 text-sm font-bold uppercase tracking-wide select-none">Mission: Get Eliminated</p>
+                            <div className="h-px w-full bg-white/10 my-2"></div>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-widest select-none">Win Condition</p>
+                            <p className="text-yellow-300 font-bold text-sm select-none">You win if you get voted out!</p>
+                            <p className="text-xs text-slate-400 mt-2 select-none italic">You don't know the secret word.</p>
                         </div>
                         ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             <p className="text-[10px] text-blue-300/70 uppercase tracking-widest select-none">Secret Keyword</p>
-                            <p className="text-4xl font-black text-white break-words tracking-tight select-none">{gameData.word}</p>
+                            <p className="text-3xl font-black text-white break-words tracking-tight select-none">{gameData.word}</p>
                         </div>
                         )}
                     </div>
@@ -153,7 +171,7 @@ export const RevealPhase: React.FC<RevealPhaseProps> = ({ players, gameData, set
                     onClick={handleNext} 
                     fullWidth 
                     variant="ghost"
-                    className="mt-4 border border-slate-800 text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-600 transition-all"
+                    className="mt-4 border border-slate-800 text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-600 transition-all flex-shrink-0"
                 >
                     {currentIndex < players.length - 1 ? 'Close & Pass Device' : 'Burn File & Start'}
                 </Button>

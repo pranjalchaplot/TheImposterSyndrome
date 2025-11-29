@@ -393,6 +393,38 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
                 </label>
             </div>
 
+            {/* Extra Roles Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 px-1">
+                <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <span className="font-bold text-slate-200">Extra Roles</span>
+              </div>
+
+              {/* Jester Role */}
+              <div className="bg-brand-card p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a8 8 0 0 0-5 2 8 8 0 0 0-5-2H2Z"/><path d="M6 11c1.5 0 3 .5 3 2-2 0-3 0-3-2Z"/><path d="M18 11c-1.5 0-3 .5-3 2 2 0 3 0 3-2Z"/></svg>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-slate-200 text-sm">Jester</span>
+                    <span className="text-xs text-slate-500">Wins when eliminated</span>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={settings.extraRoles.jesterEnabled}
+                    onChange={() => setSettings(s => ({ ...s, extraRoles: { ...s.extraRoles, jesterEnabled: !s.extraRoles.jesterEnabled } }))}
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                </label>
+              </div>
+            </div>
+
             {/* Category Selector */}
             <div className="space-y-4">
                <div className="flex items-center gap-3 px-1">
