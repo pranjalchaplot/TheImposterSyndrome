@@ -22,6 +22,7 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
   
   // UI State
   const [step, setStep] = useState<'ROSTER' | 'SETTINGS'>('ROSTER');
+  const [showInfo, setShowInfo] = useState(false);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   
   const inputRef = useRef<HTMLInputElement>(null);
@@ -158,6 +159,14 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
           className={`flex-1 py-2 rounded-full text-sm font-bold transition-all ${step === 'SETTINGS' ? 'bg-white text-brand-dark shadow-lg shadow-white/10' : 'bg-brand-surface text-slate-400 hover:bg-slate-700'}`}
         >
           MISSION
+        </button>
+        
+        <button 
+          onClick={() => setShowInfo(true)}
+          className="w-9 h-9 rounded-full bg-brand-surface text-slate-400 hover:bg-slate-700 hover:text-white flex items-center justify-center transition-all font-serif font-bold italic border border-transparent hover:border-slate-500 shrink-0"
+          title="Game Info"
+        >
+          i
         </button>
       </div>
 
@@ -506,6 +515,38 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
           {activePlayers.length < MIN_PLAYERS ? `Need ${MIN_PLAYERS - activePlayers.length} more Agents` : 'INITIALIZE MISSION'}
         </Button>
       </div>
+
+      {/* Info Modal */}
+      {showInfo && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-brand-card border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+                <button 
+                    onClick={() => setShowInfo(false)}
+                    className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+                
+                <h2 className="text-2xl font-bold text-white mb-4">About</h2>
+                
+                <div className="space-y-4 text-slate-300 text-sm leading-relaxed">
+                    <p>
+                        <strong className="text-brand-primary">Imposter Syndrome</strong> is a social deduction game where players must work together to identify the hidden imposters among them.
+                    </p>
+                    <p>
+                        Ask questions, analyze behavior, and vote to eliminate the suspects. But be careful—the imposters are trying to blend in and sabotage the mission!
+                    </p>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+                    <p className="text-xs text-slate-500 uppercase tracking-widest mb-2">Developed By</p>
+                    <p className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-400">
+                        Pranjal Chaplot
+                    </p>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
