@@ -4,6 +4,7 @@ import { Button } from './ui/Button';
 import { MIN_PLAYERS, MAX_PLAYERS, GameSettings, DEFAULT_SETTINGS } from '../types';
 import { WORD_BANK } from '../services/wordBank';
 import { DiceIcon, RobotIcon, CategoryCard } from './ui/AnimatedIcons';
+import imposterLogo from '../assets/IMPOSTER.png';
 
 interface SetupPhaseProps {
   onStartGame: (names: string[], settings: GameSettings) => void;
@@ -137,13 +138,12 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
     <div className="flex flex-col h-full max-w-md mx-auto animate-fade-in relative">
       
       {/* Header */}
-      <div className="pt-10 pb-6 px-6 text-center">
-        <h1 className="flex flex-col items-center justify-center leading-none">
-          <span className="text-3xl font-bold text-rose-800 tracking-[0.2em] uppercase mb-1 drop-shadow-lg">IMPOSTER</span>
-          <span className="text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-red-500 to-orange-600 drop-shadow-2xl">
-            SYNDROME
-          </span>
-        </h1>
+      <div className="pt-10 pb-6 px-6 text-center flex justify-center">
+        <img 
+          src={imposterLogo} 
+          alt="Imposter Syndrome" 
+          className="w-64 object-contain mix-blend-screen drop-shadow-2xl"
+        />
       </div>
 
       {/* Tabs */}
