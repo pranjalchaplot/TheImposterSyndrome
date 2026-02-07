@@ -22,6 +22,7 @@ export interface GameSettings {
   extraRoles: {
     jesterEnabled: boolean;
   };
+  enableAdultMode: boolean;
 }
 
 export interface Player {
@@ -49,5 +50,6 @@ export const DEFAULT_SETTINGS: GameSettings = {
   targetCategory: "LOCAL_RANDOM", // Default: Offline Deck
   extraRoles: {
     jesterEnabled: false
-  }
+  },
+  enableAdultMode: false
 };

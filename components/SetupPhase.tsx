@@ -24,6 +24,7 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
   // UI State
   const [step, setStep] = useState<'ROSTER' | 'SETTINGS'>('ROSTER');
   const [showInfo, setShowInfo] = useState(false);
+  const [showNSFWWarning, setShowNSFWWarning] = useState(false);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   
   const inputRef = useRef<HTMLInputElement>(null);
@@ -134,16 +135,40 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
     setSettings(s => ({ ...s, targetCategory: cat }));
   };
 
+  const handleAdultModeToggle = () => {
+    if (!settings.enableAdultMode) {
+      // User trying to enable
+      setShowNSFWWarning(true);
+    } else {
+      // User disabling
+      setSettings(s => ({ 
+        ...s, 
+        enableAdultMode: false,
+        targetCategory: s.targetCategory === "NSFW (18+)" ? "LOCAL_RANDOM" : s.targetCategory 
+      }));
+    }
+  };
+
+  const confirmNSFW = () => {
+    setSettings(s => ({ ...s, enableAdultMode: true }));
+    setShowNSFWWarning(false);
+  };
+
   return (
     <div className="flex flex-col h-full max-w-md mx-auto animate-fade-in relative">
       
       {/* Header */}
-      <div className="pt-10 pb-6 px-6 text-center flex justify-center">
+      <div className="pt-10 pb-6 px-6 text-center flex flex-col items-center justify-center relative">
         <img 
           src={imposterLogo} 
           alt="Imposter Syndrome" 
           className="w-64 object-contain mix-blend-screen drop-shadow-2xl"
         />
+        {((settings.targetCategory === "LOCAL_RANDOM" && settings.enableAdultMode) || settings.targetCategory === "NSFW (18+)") && (
+            <div className="absolute top-4 right-4 rotate-12 bg-red-600 text-white font-black text-xs px-2 py-1 rounded border-2 border-white shadow-xl animate-pulse cursor-default" title="Adult Content Active">
+                NSFW 18+
+            </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -434,6 +459,30 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
               </div>
             </div>
 
+
+
+              {/* Adult Mode Setting */}
+              <div className="bg-brand-card p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-600/10 rounded-lg text-red-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-slate-200 text-sm">Adult Mode (18+)</span>
+                    <span className="text-xs text-slate-500">Enable explicit content</span>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={settings.enableAdultMode}
+                    onChange={handleAdultModeToggle}
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                </label>
+              </div>
+
             {/* Category Selector */}
             <div className="space-y-4">
                <div className="flex items-center gap-3 px-1">
@@ -469,7 +518,9 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
                <div>
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 px-1">Manual Selection</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {Object.keys(WORD_BANK).map(cat => (
+                    {Object.keys(WORD_BANK)
+                      .filter(cat => settings.enableAdultMode || cat !== "NSFW (18+)")
+                      .map(cat => (
                       <button
                         key={cat}
                         onClick={() => handleCategorySelect(cat)}
@@ -543,6 +594,39 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
                     <p className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-400">
                         Pranjal Chaplot
                     </p>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* NSFW Warning Modal */}
+      {showNSFWWarning && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-brand-card border-2 border-red-600 rounded-2xl p-6 max-w-sm w-full shadow-[0_0_50px_rgba(220,38,38,0.5)] relative text-center">
+                <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                
+                <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-wide">Warning: 18+</h2>
+                
+                <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+                    This category contains <strong className="text-red-400">explicit, adult, and double-meaning words</strong>.<br/><br/>
+                    Are you sure you want to proceed?
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <button 
+                        onClick={() => setShowNSFWWarning(false)}
+                        className="py-3 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 transition-all"
+                    >
+                        CANCEL
+                    </button>
+                    <button 
+                        onClick={confirmNSFW}
+                        className="py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-600/25"
+                    >
+                        I'M OVER 18
+                    </button>
                 </div>
             </div>
         </div>

@@ -169,11 +169,18 @@ export const WORD_BANK: CategoryMap = {
     "Civil Rights Movement", "Apartheid End", "Hiroshima Bombing", "Chernobyl Disaster", "Internet Invention", 
     "Wright Brothers Flight", "Discovery of America", "Magna Carta", "Renaissance", "Black Death", "Spanish Flu", 
     "COVID-19 Pandemic", "Olympics First Modern Games", "United Nations Formation", "EU Formation", "Brexit"
-  ]
+  ],
+  "NSFW (18+)": [
+    "Anal", "Balls", "Bang", "Blowjob", "Booty", "Butt", "Chut", "Chutiya", "Clit", "Cock", "Cum", "Cummy", "Dick", "Dildo", "Fuck", "Gand", "Gand mara", "Horny", "Jizz", "Land", "Lund", "Madarchod", "Moan", "Nut", "Orgasm", "Penetration", "Pussy", "Randibaaz", "Rimjob", "Semen", "Shaft", "Squirt", "Tatti", "Threesome", "Titty", "Tatti khayega", "Viagra", "Wet", "Whore", "BJ", "Chus", "Chus le", "Dong", "Goon", "Hookup", "Lube", "Nipple", "Pegging", "Rim", "Spooning", "Stroke"
+]
 };
 
-export const getRandomLocalWord = (specificCategory?: string) => {
-  const categories = Object.keys(WORD_BANK);
+export const getRandomLocalWord = (specificCategory?: string, enableNSFW: boolean = false) => {
+  let categories = Object.keys(WORD_BANK);
+  if (!enableNSFW) {
+    categories = categories.filter(cat => cat !== "NSFW (18+)");
+  }
+  
   let category = specificCategory;
 
   if (!category || !WORD_BANK[category]) {
