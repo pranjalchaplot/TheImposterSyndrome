@@ -20,7 +20,7 @@ const App: React.FC = () => {
     setPhase(GamePhase.LOADING);
 
     // Generate Content
-    const data = await generateGameTopic(newSettings.targetCategory);
+    const data = await generateGameTopic(newSettings.targetCategory, newSettings.enableAdultMode);
     setGameData(data);
 
     // Assign Roles

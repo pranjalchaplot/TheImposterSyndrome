@@ -11,16 +11,16 @@ const getClient = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-export const generateGameTopic = async (targetCategory: string): Promise<GameData> => {
+export const generateGameTopic = async (targetCategory: string, enableNSFW: boolean = false): Promise<GameData> => {
   
   // 1. Handle Local Random
   if (targetCategory === "LOCAL_RANDOM") {
-    return getRandomLocalWord();
+    return getRandomLocalWord(undefined, enableNSFW);
   }
 
   // 2. Handle Specific Local Category
   if (WORD_BANK[targetCategory]) {
-    return getRandomLocalWord(targetCategory);
+    return getRandomLocalWord(targetCategory, enableNSFW);
   }
 
   // 3. Handle AI (Random or Custom)
@@ -29,7 +29,7 @@ export const generateGameTopic = async (targetCategory: string): Promise<GameDat
   // Fallback if no API key is present but AI was requested
   if (!client) {
     console.warn("No API Key found for AI request, falling back to local random.");
-    return getRandomLocalWord();
+    return getRandomLocalWord(undefined, enableNSFW);
   }
 
   try {
@@ -76,6 +76,6 @@ export const generateGameTopic = async (targetCategory: string): Promise<GameDat
   } catch (error) {
     console.error("Gemini API Error:", error);
     // Graceful fallback to local data
-    return getRandomLocalWord();
+    return getRandomLocalWord(undefined, enableNSFW);
   }
 };
