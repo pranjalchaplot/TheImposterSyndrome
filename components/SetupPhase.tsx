@@ -1,20 +1,26 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from './ui/Button';
 import { MIN_PLAYERS, MAX_PLAYERS, GameSettings, DEFAULT_SETTINGS } from '../types';
 import { WORD_BANK } from '../services/wordBank';
 import { DiceIcon, RobotIcon, CategoryCard } from './ui/AnimatedIcons';
 import imposterLogo from '../assets/IMPOSTER.png';
+import gradientVideo from '../assets/videos/gradient_video.mp4';
 
 interface SetupPhaseProps {
   onStartGame: (names: string[], settings: GameSettings) => void;
+  isMuted: boolean;
+  onToggleMute: () => void;
+  currentTrackName: string;
+  onNextTrack: () => void;
+  onPrevTrack: () => void;
 }
 
 const STORAGE_KEY_PLAYERS = 'imposter_saved_players';
 const STORAGE_KEY_ACTIVE_PLAYERS = 'imposter_active_players';
 const STORAGE_KEY_SETTINGS = 'imposter_settings';
 
-export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
+export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame, isMuted, onToggleMute, currentTrackName, onNextTrack, onPrevTrack }) => {
   // Players State
   const [activePlayers, setActivePlayers] = useState<string[]>([]);
   const [savedPlayers, setSavedPlayers] = useState<string[]>([]);
@@ -27,7 +33,60 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
   const [showNSFWWarning, setShowNSFWWarning] = useState(false);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   
+  // Music Player State
+  const [showMusicPlayer, setShowMusicPlayer] = useState(false);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const resetHideTimer = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => setShowMusicPlayer(false), 3000);
+  }, []);
+
+  // Sync with audio element
+  useEffect(() => {
+    if (showMusicPlayer) {
+      resetHideTimer();
+      const audio = document.getElementById('bgm-player-element') as HTMLAudioElement;
+      if (!audio) return;
+
+      const updateTime = () => setCurrentTime(audio.currentTime);
+      const updateDur = () => setDuration(audio.duration || 0);
+
+      setCurrentTime(audio.currentTime);
+      setDuration(audio.duration || 0);
+
+      audio.addEventListener('timeupdate', updateTime);
+      audio.addEventListener('loadedmetadata', updateDur);
+      
+      return () => {
+        audio.removeEventListener('timeupdate', updateTime);
+        audio.removeEventListener('loadedmetadata', updateDur);
+      };
+    }
+  }, [showMusicPlayer, resetHideTimer]);
+
+  // Auto-hide when muted as requested
+  useEffect(() => {
+    if (isMuted) setShowMusicPlayer(false);
+  }, [isMuted]);
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const audio = document.getElementById('bgm-player-element') as HTMLAudioElement;
+    if (audio) {
+      audio.currentTime = parseFloat(e.target.value);
+      setCurrentTime(audio.currentTime);
+    }
+    resetHideTimer();
+  };
+
+  const handlePlayPause = () => {
+    onToggleMute();
+    setShowMusicPlayer(false); // Disappears when play button is clicked
+  };
 
   // Load Data on Mount
   useEffect(() => {
@@ -159,6 +218,13 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
       
       {/* Header */}
       <div className="pt-10 pb-6 px-6 text-center flex flex-col items-center justify-center relative">
+        <style>{`
+          @keyframes musicWave {
+            0%, 100% { height: 4px; opacity: 0.5; }
+            50% { height: 14px; opacity: 1; }
+          }
+        `}</style>
+
         <img 
           src={imposterLogo} 
           alt="Imposter Syndrome" 
@@ -193,6 +259,80 @@ export const SetupPhase: React.FC<SetupPhaseProps> = ({ onStartGame }) => {
         >
           i
         </button>
+
+        {/* Music Player Toggle Button */}
+        <button
+          onClick={() => {
+            setShowMusicPlayer(p => !p);
+            resetHideTimer();
+          }}
+          title="Media Player"
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border shrink-0 ${
+            showMusicPlayer 
+              ? 'bg-brand-primary text-white border-brand-primary shadow-[0_0_15px_rgba(167,139,250,0.5)]' 
+              : 'bg-brand-surface text-slate-400 hover:bg-slate-700 hover:text-white border-transparent hover:border-slate-500'
+          }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </button>
+      </div>
+
+      {/* Music Player Inline Panel */}
+      <div 
+        onMouseMove={resetHideTimer}
+        onTouchMove={resetHideTimer}
+        className={`px-6 flex justify-center w-full transition-all duration-500 ease-in-out overflow-hidden ${
+          showMusicPlayer ? 'max-h-24 opacity-100 mb-4' : 'max-h-0 opacity-0 mb-0'
+        }`}
+      >
+        <div className="relative border border-[#a78bfa]/20 rounded-2xl p-2.5 shadow-2xl w-full max-w-full flex items-center justify-between gap-3 overflow-hidden">
+          
+          {/* Native Video Background Layer */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            src={gradientVideo}
+            className="absolute inset-0 w-full h-full object-cover z-0"
+          />
+          {/* Dimming overlay so text remains readable */}
+          <div className="absolute inset-0 z-[1] bg-black/75 pointer-events-none" />
+          
+          <div className="flex items-center gap-3 relative z-10 min-w-0 flex-1">
+             <div className="flex items-end gap-[1.5px] shrink-0 h-4 min-w-[20px]">
+                {[0, 0.4, 0.2, 0.6, 0.3, 0.5, 0.1].map((delay, i) => (
+                  <span key={i} style={{
+                    display: 'block', width: '2px', background: 'linear-gradient(to top, #c4b5fd, #a78bfa)', borderRadius: '2px',
+                    animation: (!isMuted && showMusicPlayer) ? `musicWave 0.8s ease-in-out ${delay}s infinite` : 'none',
+                    height: !isMuted ? '5px' : '2px',
+                    transition: 'all 0.3s ease'
+                   }} />
+                ))}
+             </div>
+             <span className="font-bold text-slate-100 text-xs truncate drop-shadow-md leading-none">{currentTrackName}</span>
+          </div>
+
+          <div className="flex items-center gap-2 relative z-10 shrink-0">
+            <button 
+              onClick={(e) => { handlePlayPause(); }}
+              className="w-9 h-9 rounded-full bg-brand-primary text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-[0_4px_10px_rgba(167,139,250,0.3)] border border-[#c4b5fd]/20"
+            >
+              {isMuted ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              )}
+            </button>
+            <button 
+              onClick={(e) => { onNextTrack(); resetHideTimer(); }}
+              className="w-8 h-8 flex items-center justify-center rounded-full text-slate-200 bg-white/5 hover:bg-white/10 transition-all hover:scale-105 active:scale-95"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            </button>
+          </div>
+
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-4 custom-scrollbar">
