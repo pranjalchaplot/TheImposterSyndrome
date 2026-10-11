@@ -1,10 +1,12 @@
-
 export enum GamePhase {
-  SETUP = 'SETUP',
-  LOADING = 'LOADING',
-  REVEAL = 'REVEAL',
-  PLAY = 'PLAY',
-  GAME_OVER = 'GAME_OVER' // Final winner
+  SETUP = 'SETUP',               // Join / Host screen
+  LOBBY = 'LOBBY',               // Inside room, waiting to start
+  LOADING = 'LOADING',           // AI/Bank content generation
+  REVEAL = 'REVEAL',             // Secret dossier role & word reveal
+  PLAY = 'PLAY',                 // Discussion phase & timer
+  VOTING = 'VOTING',             // Real-time simultaneous secret voting
+  ROUND_RESULT = 'ROUND_RESULT', // Ejection / Vote tally announcement
+  GAME_OVER = 'GAME_OVER'        // Game completed, all roles revealed
 }
 
 export type ExtraRole = 'JESTER' | null;
@@ -14,10 +16,6 @@ export interface GameSettings {
   imposterCount: number;
   revealRoleOnDeath: boolean;
   imposterTeaming: boolean; // If true, imposters see each other
-  // If empty -> AI Random
-  // If "LOCAL_RANDOM" -> Local Random
-  // If matches key in WORD_BANK -> Local Specific
-  // Else -> AI Custom Prompt
   targetCategory: string;
   extraRoles: {
     jesterEnabled: boolean;
@@ -28,10 +26,51 @@ export interface GameSettings {
 export interface Player {
   id: string;
   name: string;
-  isImposter: boolean;
+  isImposter?: boolean;
   isDead: boolean;
   avatarSeed: number;
-  extraRole: ExtraRole;
+  extraRole?: ExtraRole;
+  isHost?: boolean;
+  isConnected?: boolean;
+  hasVoted?: boolean;
+  role?: 'CREW' | 'IMPOSTER' | 'JESTER';
+}
+
+export interface SanitizedPlayer {
+  id: string;
+  name: string;
+  avatarSeed: number;
+  isHost: boolean;
+  isConnected: boolean;
+  isDead: boolean;
+  hasVoted: boolean;
+  role?: 'CREW' | 'IMPOSTER' | 'JESTER'; // Masked unless own role, revealed teammate, or GAME_OVER
+}
+
+export interface VoteSummary {
+  votes: Record<string, number>; // targetPlayerId or 'SKIP' -> count
+  totalVotesCast: number;
+  totalActivePlayers: number;
+  ejectedPlayerId: string | 'SKIP' | 'TIE' | null;
+  ejectedPlayerName?: string;
+  outcomeText: string;
+}
+
+export interface SanitizedClientState {
+  roomCode: string;
+  phase: GamePhase;
+  myPlayerId: string;
+  players: SanitizedPlayer[];
+  settings: GameSettings;
+  category: string | null;
+  secretWord: string | null; // NULL for Imposter and Jester! Zero-leakage guarantee.
+  myRole: 'CREW' | 'IMPOSTER' | 'JESTER' | null;
+  teammates: string[]; // List of imposter teammate names if imposterTeaming is enabled
+  timerRemaining: number;
+  winner: 'CREW' | 'IMPOSTER' | 'JESTER' | null;
+  ejectedPlayer: { id: string; name: string; isImposter?: boolean; extraRole?: ExtraRole } | null;
+  voteSummary: VoteSummary | null;
+  trueGameData: GameData | null; // Only populated on GAME_OVER
 }
 
 export interface GameData {
@@ -46,8 +85,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   timerDuration: 0, // Default: No Timer
   imposterCount: 1,
   revealRoleOnDeath: true,
-  imposterTeaming: false, // Default: Disabled
-  targetCategory: "LOCAL_RANDOM", // Default: Offline Deck
+  imposterTeaming: false,
+  targetCategory: "LOCAL_RANDOM",
   extraRoles: {
     jesterEnabled: false
   },
