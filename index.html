@@ -3,8 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Imposter Syndrome</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z%22/><circle cx=%2212%22 cy=%2212%22 r=%223%22/></svg>">
+    <title>Imposter Syndrome — Classified Protocol</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23FF4438%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/><path d=%22m4.93 4.93 14.14 14.14%22/></svg>">
+    
+    <!-- Typography: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -12,54 +18,56 @@
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            },
             animation: {
-              'fade-in': 'fadeIn 0.4s ease-out',
-              'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+              'fade-in': 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              'slide-up': 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
               'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'bounce-slight': 'bounceSlight 2s infinite',
-              'float': 'float 3s ease-in-out infinite',
-              'glitch': 'glitch 1s linear infinite',
-              'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+              'scan': 'scan 2.5s ease-in-out infinite',
+              'pop': 'pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+              'shimmer': 'shimmer 2s linear infinite',
             },
             keyframes: {
               fadeIn: {
-                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '0%': { opacity: '0', transform: 'scale(0.98)' },
                 '100%': { opacity: '1', transform: 'scale(1)' },
               },
               slideUp: {
-                '0%': { transform: 'translateY(100%)' },
-                '100%': { transform: 'translateY(0)' },
+                '0%': { transform: 'translateY(16px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
               },
-              bounceSlight: {
-                '0%, 100%': { transform: 'translateY(-5%)' },
-                '50%': { transform: 'translateY(0)' },
-              },
-              float: {
-                '0%, 100%': { transform: 'translateY(0px)' },
-                '50%': { transform: 'translateY(-10px)' },
+              scan: {
+                '0%, 100%': { transform: 'translateY(0%)', opacity: '0.3' },
+                '50%': { transform: 'translateY(100%)', opacity: '0.8' },
               },
               pop: {
-                '0%': { transform: 'scale(0.8)' },
+                '0%': { transform: 'scale(0.92)' },
                 '100%': { transform: 'scale(1)' },
               },
-              glitch: {
-                '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
-                '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
-                '62%': { transform: 'translate(0,0) skew(5deg)' },
+              shimmer: {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' },
               }
             },
             colors: {
               brand: {
-                dark: '#09090b', // Zinc 950
-                card: '#18181b', // Zinc 900
-                surface: '#27272a', // Zinc 800
-                primary: '#8b5cf6', // Violet 500
-                primaryHover: '#7c3aed', // Violet 600
-                secondary: '#ec4899', // Pink 500
-                accent: '#06b6d4', // Cyan 500
-                success: '#22c55e', // Green 500
-                danger: '#ef4444', // Red 500
-                warning: '#f59e0b', // Amber 500
+                void: '#0B0C0E',         // obsidian background
+                dossier: '#14171D',      // primary card background
+                surface: '#1E222B',      // interactive container / chip
+                surfaceHover: '#282D39',
+                border: '#2B303C',       // hairline rule / outline
+                borderLight: '#3D4454',
+                primary: '#FF4438',      // Signal Vermilion (The Locked Accent)
+                primaryHover: '#E0362B',
+                accent: '#FF4438',
+                text: '#F4F5F7',         // crisp bone white
+                muted: '#8E95A5',        // radar silver metadata
+                success: '#10B981',
+                warning: '#F59E0B',
+                danger: '#EF4444',
               }
             }
           },
@@ -76,28 +84,42 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-brand-dark text-slate-200 antialiased overflow-hidden fixed inset-0 select-none">
+  <body class="bg-brand-void text-brand-text font-sans antialiased overflow-hidden fixed inset-0 select-none">
     <div id="root" class="h-full w-full overflow-y-auto custom-scrollbar"></div>
     <style>
+      /* Mobile safe areas and ergonomics */
+      :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left, 0px);
+        --sar: env(safe-area-inset-right, 0px);
+      }
+
       /* Disable Tap Highlights globally for mobile */
       * {
         -webkit-tap-highlight-color: transparent;
       }
       /* Disable Text Selection Background globally */
       ::selection {
-        background: transparent;
+        background: rgba(255, 68, 56, 0.25);
+        color: #F4F5F7;
+      }
+
+      /* Squircles and continuous curves */
+      .squircle {
+        border-radius: 1.5rem;
+        corner-smoothing: 60%;
       }
 
       .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
+        width: 4px;
       }
       .custom-scrollbar::-webkit-scrollbar-track {
         background: transparent;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: #3f3f46;
+        background-color: #2B303C;
         border-radius: 20px;
       }
 

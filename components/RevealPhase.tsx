@@ -1,8 +1,8 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Player, GameData, GameSettings } from '../types';
 import { Button } from './ui/Button';
-import { ImposterIcon, CivilianIcon } from './ui/AnimatedIcons';
+import { ImposterIcon, CivilianIcon, JesterIcon } from './ui/AnimatedIcons';
+import { haptics } from '../services/haptics';
 
 interface RevealPhaseProps {
   players: Player[];
@@ -11,175 +11,345 @@ interface RevealPhaseProps {
   onComplete: () => void;
 }
 
-export const RevealPhase: React.FC<RevealPhaseProps> = ({ players, gameData, settings, onComplete }) => {
+export const RevealPhase: React.FC<RevealPhaseProps> = ({ 
+  players, 
+  gameData, 
+  settings, 
+  onComplete 
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
-  
-  // State to hide the name while passing the device
   const [isPassing, setIsPassing] = useState(false);
+  
+  // Biometric hold-to-decrypt state
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const currentPlayer = players[currentIndex];
+  const nextPlayer = currentIndex < players.length - 1 ? players[currentIndex + 1] : null;
 
-  const handleReveal = () => {
+  // Other imposters for teaming
+  const otherImposters = players.filter(p => p.isImposter && p.id !== currentPlayer.id);
+
+  // Clear timers on unmount
+  useEffect(() => {
+    return () => {
+      if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
+    };
+  }, []);
+
+  const startHold = () => {
+    if (isRevealed || isPassing) return;
+    haptics.scanPulse();
+
+    setHoldProgress(10);
+    const stepTime = 40; // total hold time ~ 600ms
+    holdIntervalRef.current = setInterval(() => {
+      setHoldProgress(prev => {
+        if (prev >= 100) {
+          if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
+          revealDossier();
+          return 100;
+        }
+        haptics.tick();
+        return prev + 12;
+      });
+    }, stepTime);
+  };
+
+  const cancelHold = () => {
+    if (holdIntervalRef.current) {
+      clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+    if (!isRevealed) {
+      setHoldProgress(0);
+    }
+  };
+
+  const revealDossier = () => {
+    haptics.reveal();
     setIsRevealed(true);
+    setHoldProgress(0);
   };
 
   const handleNext = () => {
-    // 1. Start flipping back to front
+    haptics.tap();
     setIsRevealed(false);
-    
-    // 2. Immediately set Passing state to hide the current name on the front card
     setIsPassing(true);
-
-    // 3. Wait for flip transition to finish before swapping data
-    setTimeout(() => {
-        if (currentIndex < players.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-            // Note: We keep isPassing true for a moment or let the user click?
-            // Current design: The front card shows "Access File" for the new player.
-            setIsPassing(false); 
-        } else {
-            onComplete();
-        }
-    }, 600); // Matches transition duration
   };
 
-  // Logic for Imposter Teaming
-  const otherImposters = players.filter(p => p.isImposter && p.id !== currentPlayer.id);
+  const handleReadyNextPlayer = () => {
+    haptics.tap();
+    if (currentIndex < players.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      setIsPassing(false);
+    } else {
+      onComplete();
+    }
+  };
 
   return (
-    <div className="flex flex-col h-full max-w-md mx-auto p-6 animate-fade-in justify-center relative">
+    <div className="flex flex-col h-full max-w-md mx-auto px-4 py-6 justify-between select-none relative animate-fade-in overflow-hidden">
       
-      {/* Progress Bar */}
-      <div className="absolute top-6 left-6 right-6 flex gap-1 z-10">
-        {players.map((_, idx) => (
-          <div 
-            key={idx} 
-            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-              idx < currentIndex ? 'bg-slate-600' : 
-              idx === currentIndex ? 'bg-brand-primary animate-pulse' : 'bg-slate-800'
-            }`} 
-          />
-        ))}
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center w-full perspective-1000">
-        
-        {/* Card Container with Flip Logic - Dynamic Height */}
-        <div className={`relative w-full max-w-md transition-transform duration-700 transform-style-3d ${isRevealed ? 'rotate-y-180' : ''}`}>
-            
-            {/* Front of Card (Pass to Player) */}
-            <div className="backface-hidden bg-brand-card rounded-3xl border border-slate-700 shadow-2xl flex flex-col items-center justify-center p-8 relative min-h-[500px]">
-                
-                {/* Decor - Scanning lines */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
-                    <div className="absolute top-0 w-full h-[2px] bg-brand-primary shadow-[0_0_10px_#8b5cf6] animate-[scan_3s_ease-in-out_infinite]"></div>
-                </div>
-
-                {/* Mystery Lock Icon */}
-                <div className="w-28 h-28 rounded-full bg-slate-900/80 border-2 border-dashed border-slate-600 flex items-center justify-center mb-8 relative group shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                    {/* Rotating Ring */}
-                    <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-brand-primary/50 border-r-brand-primary/50 animate-[spin_4s_linear_infinite]"></div>
-                    <div className="relative z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    </div>
-                </div>
-
-                <h2 className="text-xs font-bold text-brand-primary uppercase tracking-[0.3em] mb-2 select-none pointer-events-none">
-                    {isPassing ? 'SECURE LINK' : 'Classified'}
-                </h2>
-                <h1 className="text-3xl font-black text-white mb-4 text-center min-h-[2.5rem] select-none pointer-events-none">
-                    {isPassing ? 'SECURING DATA...' : currentPlayer.name}
-                </h1>
-                <p className="text-slate-500 text-center text-sm mb-10 px-4 select-none pointer-events-none">
-                    {isPassing ? 'Please wait while file encrypts.' : 'Identity verification required. Hand device to agent.'}
-                </p>
-                
-                <Button onClick={handleReveal} fullWidth disabled={isPassing} className="mt-auto border border-brand-primary/30 shadow-[0_0_15px_rgba(139,92,246,0.15)]">
-                    <div className="flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <span>Access File</span>
-                    </div>
-                </Button>
-            </div>
-
-            {/* Back of Card (Role Reveal) */}
-            <div className="absolute top-0 left-0 right-0 backface-hidden rotate-y-180 bg-slate-950 rounded-3xl border border-slate-800 shadow-2xl flex flex-col p-6 min-h-[500px]">
-                
-                <div className="flex-1 flex flex-col items-center justify-start w-full relative z-10 py-4">
-                    
-                    <div className="mb-6 scale-110">
-                        {currentPlayer.isImposter ? <ImposterIcon /> : <CivilianIcon />}
-                    </div>
-
-                    <h3 className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-2 select-none pointer-events-none">
-                        Role Info
-                    </h3>
-                    
-                    {/* Reduced Font Size Here */}
-                    <h2 className={`text-xl font-black mb-6 tracking-wide select-none pointer-events-none ${currentPlayer.isImposter ? 'text-rose-600' : currentPlayer.extraRole === 'JESTER' ? 'text-yellow-400' : 'text-blue-400'}`}>
-                        {currentPlayer.isImposter ? 'IMPOSTER' : currentPlayer.extraRole === 'JESTER' ? 'NEUTRAL' : 'AGENT'}
-                    </h2>
-
-                    {/* Extra Role Badge */}
-                    {currentPlayer.extraRole === 'JESTER' && (
-                      <div className="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-                        <div className="flex items-center gap-2 justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a8 8 0 0 0-5 2 8 8 0 0 0-5-2H2Z"/><path d="M6 11c1.5 0 3 .5 3 2-2 0-3 0-3-2Z"/><path d="M18 11c-1.5 0-3 .5-3 2 2 0 3 0 3-2Z"/></svg>
-                          <span className="text-yellow-500 font-black text-sm uppercase tracking-wider">JESTER</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="w-full bg-white/5 rounded-xl p-4 border border-white/10 text-center backdrop-blur-sm">
-                        {currentPlayer.isImposter ? (
-                        <div className="space-y-2">
-                            <p className="text-rose-400 text-sm font-bold uppercase tracking-wide select-none">Mission: Sabotage</p>
-                            
-                            {/* Imposter Teaming Display */}
-                            {settings.imposterTeaming && otherImposters.length > 0 && (
-                                <div className="bg-rose-900/30 p-2 rounded border border-rose-500/30 mt-2">
-                                    <p className="text-[8px] text-rose-300 uppercase tracking-widest mb-1 select-none">Allies Detected</p>
-                                    <p className="text-rose-100 font-bold text-sm select-none">
-                                        {otherImposters.map(p => p.name).join(', ')}
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="h-px w-full bg-white/10 my-2"></div>
-                            <p className="text-[10px] text-slate-500 uppercase tracking-widest select-none">Topic Reference</p>
-                            <p className="text-white font-bold text-base select-none">{gameData.category}</p>
-                        </div>
-                        ) : currentPlayer.extraRole === 'JESTER' ? (
-                        <div className="space-y-2">
-                            <p className="text-yellow-400 text-sm font-bold uppercase tracking-wide select-none">Mission: Get Eliminated</p>
-                            <div className="h-px w-full bg-white/10 my-2"></div>
-                            <p className="text-[10px] text-slate-500 uppercase tracking-widest select-none">Win Condition</p>
-                            <p className="text-yellow-300 font-bold text-sm select-none">You win if you get voted out!</p>
-                            <p className="text-xs text-slate-400 mt-2 select-none italic">You don't know the secret word.</p>
-                        </div>
-                        ) : (
-                        <div className="space-y-2">
-                            <p className="text-[10px] text-blue-300/70 uppercase tracking-widest select-none">Secret Keyword</p>
-                            <p className="text-3xl font-black text-white break-words tracking-tight select-none">{gameData.word}</p>
-                        </div>
-                        )}
-                    </div>
-                </div>
-
-                <Button 
-                    onClick={handleNext} 
-                    fullWidth 
-                    variant="ghost"
-                    className="mt-4 border border-slate-800 text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-600 transition-all flex-shrink-0"
-                >
-                    {currentIndex < players.length - 1 ? 'Close & Pass Device' : 'Burn File & Start'}
-                </Button>
-            </div>
-
+      {/* Top Progress Track */}
+      <div className="space-y-1.5 pb-2">
+        <div className="flex justify-between items-center text-xs font-mono text-brand-muted">
+          <span className="uppercase tracking-wider">Clearance Sequence</span>
+          <span>Agent {currentIndex + 1} of {players.length}</span>
         </div>
-
+        <div className="flex gap-1 h-1.5">
+          {players.map((_, idx) => (
+            <div 
+              key={idx} 
+              className={`h-full flex-1 rounded-full transition-all duration-300 ${
+                idx < currentIndex 
+                  ? 'bg-brand-primary' 
+                  : idx === currentIndex 
+                    ? 'bg-brand-primary animate-pulse' 
+                    : 'bg-brand-surface'
+              }`} 
+            />
+          ))}
+        </div>
       </div>
+
+      {/* PRIVACY HANDOFF CURTAIN (Prevents accidental glances) */}
+      {isPassing && nextPlayer ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-brand-void/95 rounded-3xl border border-brand-border my-auto animate-fade-in">
+          <div className="w-20 h-20 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-muted mb-6 shadow-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-brand-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <span className="text-[11px] font-mono uppercase tracking-widest text-brand-primary mb-1">
+            Privacy Lock Engaged
+          </span>
+          <h2 className="text-2xl font-black text-white mb-3">
+            Hand Device to Agent
+          </h2>
+          <div className="inline-block px-5 py-2.5 rounded-2xl bg-brand-surface border border-brand-border text-lg font-bold text-brand-primary mb-8 tracking-tight">
+            {nextPlayer.name}
+          </div>
+          <p className="text-xs text-brand-muted max-w-[240px] mb-8">
+            Do not view the screen until the device is safely in {nextPlayer.name}'s hands.
+          </p>
+          <Button 
+            onClick={handleReadyNextPlayer} 
+            fullWidth 
+            size="lg" 
+            variant="primary"
+          >
+            I am {nextPlayer.name} — Unlock Dossier
+          </Button>
+        </div>
+      ) : (
+        /* PERSPECTIVE CARD CONTAINER */
+        <div className="flex-1 flex flex-col justify-center my-auto perspective-1000 py-2">
+          <div className={`relative w-full transition-transform duration-500 transform-style-3d ${isRevealed ? 'rotate-y-180' : ''}`}>
+            
+            {/* FRONT OF CARD: Biometric Authentication Screen */}
+            <div className="backface-hidden w-full bg-brand-dossier rounded-3xl border border-brand-border p-6 shadow-2xl flex flex-col items-center text-center relative overflow-hidden min-h-[460px] justify-between">
+              
+              {/* Scanline Ambience */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
+                <div className="w-full h-[2px] bg-brand-primary shadow-[0_0_12px_#FF4438] animate-scan" />
+              </div>
+
+              {/* Clearance Header */}
+              <div className="pt-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-surface border border-brand-border text-[10px] font-mono text-brand-muted tracking-wider uppercase mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
+                  Classified Briefing
+                </div>
+                <h1 className="text-3xl font-black text-white tracking-tight">
+                  {currentPlayer.name}
+                </h1>
+                <p className="text-xs text-brand-muted mt-1">
+                  Identity verification required to decrypt mission.
+                </p>
+              </div>
+
+              {/* Fingerprint Biometric Scanner */}
+              <div className="my-auto py-6 flex flex-col items-center">
+                <button
+                  type="button"
+                  onPointerDown={startHold}
+                  onPointerUp={cancelHold}
+                  onPointerLeave={cancelHold}
+                  className="relative w-28 h-28 rounded-full bg-brand-surface border-2 border-brand-border hover:border-brand-primary/50 flex items-center justify-center shadow-inner transition-transform active:scale-95 group focus:outline-none"
+                >
+                  {/* Progress Ring */}
+                  <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="44"
+                      fill="none"
+                      stroke="#1E222B"
+                      strokeWidth="6"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="44"
+                      fill="none"
+                      stroke="#FF4438"
+                      strokeWidth="6"
+                      strokeDasharray="276"
+                      strokeDashoffset={276 - (276 * holdProgress) / 100}
+                      strokeLinecap="round"
+                      className="transition-all duration-75"
+                    />
+                  </svg>
+
+                  {/* Fingerprint Icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-brand-muted group-hover:text-brand-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                    <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+                    <path d="M2 12a10 10 0 0 1 18-6"/>
+                    <path d="M2 16h.01"/>
+                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+                    <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+                    <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+                    <path d="M9 12v-1a3 3 0 0 1 6 0v1.5"/>
+                  </svg>
+                </button>
+
+                <p className="text-xs font-mono text-brand-muted mt-4 uppercase tracking-wider">
+                  {holdProgress > 0 ? `Decrypting (${Math.round(holdProgress)}%)...` : 'Press & Hold to Decrypt'}
+                </p>
+              </div>
+
+              {/* Instant Reveal Fallback (For accessibility / desktop clicks) */}
+              <button
+                type="button"
+                onClick={revealDossier}
+                className="text-[11px] font-mono text-brand-muted underline hover:text-brand-text mb-1"
+              >
+                Or tap here to reveal directly
+              </button>
+            </div>
+
+            {/* BACK OF CARD: Classified Dossier Revealed */}
+            <div className="backface-hidden rotate-y-180 absolute inset-0 w-full h-full bg-brand-dossier rounded-3xl border border-brand-border p-6 shadow-2xl flex flex-col justify-between text-center overflow-hidden">
+              
+              {/* CREW MEMBER DOSSIER */}
+              {!currentPlayer.isImposter && currentPlayer.extraRole !== 'JESTER' && (
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 uppercase tracking-widest mb-3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Classified Clearance: Loyal Agent
+                    </div>
+                    <CivilianIcon className="w-16 h-16 mx-auto mb-2" />
+                    <h3 className="text-xs font-mono uppercase tracking-wider text-brand-muted">
+                      Target Category: <strong className="text-white">{gameData.category}</strong>
+                    </h3>
+                  </div>
+
+                  {/* Secret Word Stamp */}
+                  <div className="p-4 rounded-2xl bg-brand-surface border border-brand-border shadow-inner my-4">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-brand-muted block mb-1">
+                      The Secret Word
+                    </span>
+                    <h2 className="text-3xl font-black text-white tracking-tight">
+                      {gameData.word}
+                    </h2>
+                  </div>
+
+                  <p className="text-xs text-brand-muted leading-relaxed px-2">
+                    Blend in, formulate subtle interrogation questions, and deduce which player is bluffing without the word.
+                  </p>
+                </div>
+              )}
+
+              {/* IMPOSTER DOSSIER */}
+              {currentPlayer.isImposter && (
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-primary/10 border border-brand-primary/30 text-[10px] font-mono text-brand-primary uppercase tracking-widest mb-3 animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
+                      Alert: You Are The Infiltrator
+                    </div>
+                    <ImposterIcon className="w-16 h-16 mx-auto mb-2" />
+                    <h3 className="text-xs font-mono uppercase tracking-wider text-brand-muted">
+                      Category Intel: <strong className="text-white">{gameData.category}</strong>
+                    </h3>
+                  </div>
+
+                  {/* Redacted Secret Word Box */}
+                  <div className="p-4 rounded-2xl bg-brand-primary/10 border border-brand-primary/30 shadow-inner my-3">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-brand-primary block mb-1">
+                      Secret Word
+                    </span>
+                    <h2 className="text-2xl font-mono font-black text-brand-primary tracking-widest uppercase">
+                      [CLASSIFIED / REDACTED]
+                    </h2>
+                  </div>
+
+                  {/* Teammates Intel */}
+                  {settings.imposterTeaming && otherImposters.length > 0 && (
+                    <div className="p-2.5 rounded-xl bg-brand-surface border border-brand-border text-xs mb-2">
+                      <span className="text-[10px] font-mono uppercase text-brand-muted block">Co-Infiltrator(s):</span>
+                      <strong className="text-brand-primary font-mono">{otherImposters.map(p => p.name).join(', ')}</strong>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-brand-muted leading-relaxed px-2">
+                    You do NOT have the word! Bluff your answers, blend into the discussion, and frame innocent agents.
+                  </p>
+                </div>
+              )}
+
+              {/* JESTER DOSSIER */}
+              {currentPlayer.extraRole === 'JESTER' && (
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      Wildcard: The Jester
+                    </div>
+                    <JesterIcon className="w-16 h-16 mx-auto mb-2" />
+                    <h3 className="text-xs font-mono uppercase tracking-wider text-brand-muted">
+                      Category Intel: <strong className="text-white">{gameData.category}</strong>
+                    </h3>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 shadow-inner my-4">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 block mb-1">
+                      Primary Directive
+                    </span>
+                    <h2 className="text-xl font-black text-amber-400 tracking-tight">
+                      Get Yourself Ejected
+                    </h2>
+                  </div>
+
+                  <p className="text-xs text-brand-muted leading-relaxed px-2">
+                    If the group votes you out during interrogation, you immediately win the game! Act suspicious without giving away your trick.
+                  </p>
+                </div>
+              )}
+
+              {/* Confirm & Pass Button */}
+              <div className="pt-4 mt-auto border-t border-brand-border/60">
+                <Button 
+                  onClick={handleNext} 
+                  fullWidth 
+                  size="md" 
+                  variant="primary"
+                >
+                  {currentIndex < players.length - 1 ? 'Lock & Pass to Next Agent' : 'All Clear — Begin Interrogation'}
+                </Button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

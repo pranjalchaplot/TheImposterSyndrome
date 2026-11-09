@@ -1,46 +1,70 @@
 import React from 'react';
+import { haptics } from '../../services/haptics';
 
-// --- 2D Dice Icon ---
-export const DiceIcon: React.FC = () => (
-  <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shadow-lg border border-amber-300">
-    <svg xmlns="http://www.w3.org/2000/svg" className="text-white w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-      <path d="M16 8h.01"/><path d="M16 16h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M12 12h.01"/>
+// --- Tactical Randomizer Icon (Dice) ---
+export const DiceIcon: React.FC<{ className?: string }> = ({ className = "w-10 h-10" }) => (
+  <div className={`${className} bg-brand-surface border border-brand-border rounded-xl flex items-center justify-center shadow-sm text-brand-text group-hover:border-brand-primary/50 transition-colors`}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-brand-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="18" height="18" x="3" y="3" rx="3" ry="3"/>
+      <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+      <circle cx="16" cy="8" r="1.2" fill="currentColor"/>
+      <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
+      <circle cx="8" cy="16" r="1.2" fill="currentColor"/>
+      <circle cx="16" cy="16" r="1.2" fill="currentColor"/>
     </svg>
   </div>
 );
 
-// --- 2D Robot Icon ---
-export const RobotIcon: React.FC = () => (
-  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg border border-indigo-300">
-    <svg xmlns="http://www.w3.org/2000/svg" className="text-white w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="18" height="12" x="3" y="6" rx="2"/><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 14h.01"/><path d="M12 2v4"/><path d="M12 22v-4"/>
+// --- AI Infiltration Icon (Neural Core) ---
+export const RobotIcon: React.FC<{ className?: string }> = ({ className = "w-10 h-10" }) => (
+  <div className={`${className} bg-brand-surface border border-brand-border rounded-xl flex items-center justify-center shadow-sm text-brand-text group-hover:border-brand-primary/50 transition-colors`}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-brand-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="16" height="16" x="4" y="4" rx="2" />
+      <rect width="6" height="6" x="9" y="9" rx="1" />
+      <path d="M15 2v2" />
+      <path d="M15 20v2" />
+      <path d="M2 15h2" />
+      <path d="M2 9h2" />
+      <path d="M20 15h2" />
+      <path d="M20 9h2" />
+      <path d="M9 2v2" />
+      <path d="M9 20v2" />
     </svg>
   </div>
 );
 
-// --- Imposter Icon (Clean 2D) ---
-export const ImposterIcon: React.FC = () => (
-    <div className="w-20 h-20 bg-rose-900/80 rounded-full border-4 border-rose-500 flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.4)] relative">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-rose-500">
-            <path d="M12 3C16.97 3 21 7.03 21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M3 12C3 7.03 7.03 3 12 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 2"/>
-            <circle cx="9" cy="11" r="1.5" fill="currentColor"/>
-            <circle cx="15" cy="11" r="1.5" fill="currentColor"/>
-            <path d="M8 15C8 15 10 17 12 17C14 17 16 15 16 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-    </div>
+// --- Imposter Icon (Redacted Syndicate Infiltrator) ---
+export const ImposterIcon: React.FC<{ className?: string }> = ({ className = "w-20 h-20" }) => (
+  <div className={`${className} bg-brand-primary/10 rounded-full border-2 border-brand-primary flex items-center justify-center shadow-[0_0_24px_rgba(255,68,56,0.35)] relative`}>
+    <div className="absolute inset-0 rounded-full border border-brand-primary/30 animate-ping opacity-25 pointer-events-none" />
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-primary">
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+      <line x1="3" y1="3" x2="21" y2="21" stroke="#FF4438" strokeWidth="2.5" />
+    </svg>
+  </div>
 );
 
-// --- Civilian Icon (Clean 2D) ---
-export const CivilianIcon: React.FC = () => (
-    <div className="w-20 h-20 bg-blue-900/80 rounded-full border-4 border-blue-500 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.4)] relative">
-         <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-    </div>
+// --- Civilian Icon (Loyal Agent Shield) ---
+export const CivilianIcon: React.FC<{ className?: string }> = ({ className = "w-20 h-20" }) => (
+  <div className={`${className} bg-emerald-500/10 rounded-full border-2 border-brand-success flex items-center justify-center shadow-[0_0_24px_rgba(16,185,129,0.3)] relative`}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-brand-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  </div>
 );
 
+// --- Jester Icon (Wildcard Trickster) ---
+export const JesterIcon: React.FC<{ className?: string }> = ({ className = "w-20 h-20" }) => (
+  <div className={`${className} bg-amber-500/10 rounded-full border-2 border-brand-warning flex items-center justify-center shadow-[0_0_24px_rgba(245,158,11,0.3)] relative`}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-brand-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+    </svg>
+  </div>
+);
 
-// --- Generic Category Card ---
+// --- Classified Category Deck Card ---
 interface CategoryCardProps {
   active: boolean;
   onClick: () => void;
@@ -50,25 +74,50 @@ interface CategoryCardProps {
   icon?: React.ReactNode;
 }
 
-export const CategoryCard: React.FC<CategoryCardProps> = ({ active, onClick, colorClass, label, subLabel, icon }) => {
+export const CategoryCard: React.FC<CategoryCardProps> = ({ 
+  active, 
+  onClick, 
+  label, 
+  subLabel, 
+  icon 
+}) => {
+  const handleClick = () => {
+    haptics.tick();
+    onClick();
+  };
+
   return (
     <button
-      onClick={onClick}
-      className={`relative group p-1 rounded-2xl transition-all duration-200 ${active ? 'scale-[1.02]' : 'scale-100 hover:scale-[1.01]'}`}
+      type="button"
+      onClick={handleClick}
+      className={`relative w-full text-left rounded-2xl p-4 transition-all duration-150 ease-out active:scale-[0.98] border ${
+        active 
+          ? 'bg-brand-surface border-brand-primary shadow-[0_4px_16px_-2px_rgba(255,68,56,0.25)] ring-1 ring-brand-primary/50' 
+          : 'bg-brand-dossier/90 border-brand-border hover:border-brand-borderLight hover:bg-brand-surface/50'
+      }`}
     >
-      <div className={`absolute inset-0 rounded-2xl transition-opacity duration-300 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} bg-gradient-to-br ${colorClass || 'from-brand-primary to-brand-accent'} opacity-20 blur-sm`}></div>
-      
-      <div className={`relative h-full bg-brand-card border-2 rounded-2xl p-4 flex flex-col items-start text-left transition-all duration-300 ${active ? 'border-brand-primary bg-brand-surface/80' : 'border-slate-800 hover:border-slate-600'}`}>
-        <div className="mb-3 flex items-center justify-between w-full">
-           {icon}
-           {active && (
-             <div className="w-3 h-3 rounded-full bg-brand-success shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-           )}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="p-2 rounded-xl bg-brand-surface border border-brand-border/60">
+          {icon}
         </div>
-        <div>
-          <p className={`font-bold text-sm ${active ? 'text-white' : 'text-slate-300'}`}>{label}</p>
-          {subLabel && <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-1">{subLabel}</p>}
-        </div>
+        {active ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-brand-primary text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Active
+          </span>
+        ) : (
+          <span className="w-2 h-2 rounded-full bg-brand-border mt-1" />
+        )}
+      </div>
+      <div>
+        <h4 className={`text-sm font-bold tracking-tight ${active ? 'text-white' : 'text-brand-text'}`}>
+          {label}
+        </h4>
+        {subLabel && (
+          <p className="text-[11px] font-mono text-brand-muted tracking-wide mt-0.5 uppercase">
+            {subLabel}
+          </p>
+        )}
       </div>
     </button>
   );
