@@ -1,7 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { Player, GameData } from '../types';
 import { Button } from './ui/Button';
+import { ImposterIcon, CivilianIcon, JesterIcon } from './ui/AnimatedIcons';
+import { haptics } from '../services/haptics';
 
 declare global {
   interface Window {
@@ -17,38 +18,44 @@ interface GameOverPhaseProps {
   onReset: () => void;
 }
 
-export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ players, gameData, winner, onReset }) => {
+export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ 
+  players, 
+  gameData, 
+  winner, 
+  onReset 
+}) => {
   const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
+    haptics.reveal();
     if (window.confetti) {
-      const colors = winner === 'CREW' ? ['#8b5cf6', '#06b6d4'] : 
-                     winner === 'JESTER' ? ['#eab308', '#f59e0b', '#fbbf24'] :
-                     ['#ef4444', '#ec4899'];
+      const colors = winner === 'CREW' 
+        ? ['#10B981', '#34D399', '#059669'] 
+        : winner === 'JESTER' 
+          ? ['#F59E0B', '#FBBF24', '#D97706'] 
+          : ['#FF4438', '#EF4444', '#DC2626'];
+      
       window.confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: colors,
-          disableForReducedMotion: true
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: colors,
+        disableForReducedMotion: true
       });
     }
   }, [winner]);
 
   // Sort players: Winners first, then others.
   const sortedPlayers = [...players].sort((a, b) => {
-    // If Jester won, Jester comes first
     if (winner === 'JESTER') {
       if (a.extraRole === 'JESTER' && b.extraRole !== 'JESTER') return -1;
       if (a.extraRole !== 'JESTER' && b.extraRole === 'JESTER') return 1;
-    }
-    // If crew won, crew comes first
-    else if (winner === 'CREW') {
-        if (!a.isImposter && b.isImposter) return -1;
-        if (a.isImposter && !b.isImposter) return 1;
+    } else if (winner === 'CREW') {
+      if (!a.isImposter && b.isImposter) return -1;
+      if (a.isImposter && !b.isImposter) return 1;
     } else {
-        if (a.isImposter && !b.isImposter) return -1;
-        if (!a.isImposter && b.isImposter) return 1;
+      if (a.isImposter && !b.isImposter) return -1;
+      if (!a.isImposter && b.isImposter) return 1;
     }
     return 0;
   });
@@ -56,37 +63,37 @@ export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ players, gameData,
   const handleShare = async () => {
     if (!window.html2canvas) return;
     
+    haptics.tap();
     setIsSharing(true);
     const element = document.getElementById('mission-report');
     
     if (element) {
       try {
         const canvas = await window.html2canvas(element, {
-          backgroundColor: '#09090b', // Ensure dark background
-          scale: 2, // High res
+          backgroundColor: '#0B0C0E',
+          scale: 2,
         });
         
         canvas.toBlob(async (blob: Blob | null) => {
-           if (!blob) return;
-           
-           const file = new File([blob], 'mission-report.png', { type: 'image/png' });
-           
-           if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({
-                 files: [file],
-                 title: 'Imposter Protocol Report',
-                 text: `Mission Outcome: ${winner === 'CREW' ? 'Agents Won' : 'Imposters Won'}!`
-              });
-           } else {
-              // Fallback to download
-              const link = document.createElement('a');
-              link.download = 'mission-report.png';
-              link.href = canvas.toDataURL();
-              link.click();
-           }
+          if (!blob) return;
+          
+          const file = new File([blob], 'classified-mission-report.png', { type: 'image/png' });
+          
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'Imposter Syndrome Debrief',
+              text: `Mission Outcome: ${winner === 'CREW' ? 'Loyal Agents Won' : winner === 'JESTER' ? 'Jester Won' : 'Infiltrators Won'}!`
+            });
+          } else {
+            const link = document.createElement('a');
+            link.download = 'classified-mission-report.png';
+            link.href = canvas.toDataURL();
+            link.click();
+          }
         });
       } catch (err) {
-        console.error("Share failed", err);
+        console.error("Share export failed", err);
       } finally {
         setIsSharing(false);
       }
@@ -94,100 +101,165 @@ export const GameOverPhase: React.FC<GameOverPhaseProps> = ({ players, gameData,
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-md mx-auto p-6 animate-fade-in text-center overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col h-full max-w-md mx-auto px-4 py-6 justify-between select-none relative animate-fade-in overflow-hidden">
       
-      {/* Capture Container */}
-      <div id="mission-report" className="flex-1 flex flex-col items-center pt-8 bg-brand-dark p-4 rounded-xl">
-        
-        <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-2xl ${
-          winner === 'CREW' ? 'bg-brand-primary text-white shadow-brand-primary/40' : 
-          winner === 'JESTER' ? 'bg-yellow-500 text-white shadow-yellow-500/40' :
-          'bg-brand-danger text-white shadow-brand-danger/40'
-        }`}>
-          {winner === 'CREW' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-          ) : winner === 'JESTER' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a8 8 0 0 0-5 2 8 8 0 0 0-5-2H2Z"/><path d="M6 11c1.5 0 3 .5 3 2-2 0-3 0-3-2Z"/><path d="M18 11c-1.5 0-3 .5-3 2 2 0 3 0 3-2Z"/></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 22h20"/><path d="M12 2v17"/><path d="m9 5 6 6"/><path d="m15 5-6 6"/></svg>
-          )}
-        </div>
-
-        {/* Replaced Gradient Text with Solid Color to fix Screenshot Bug */}
-        <h1 className={`text-5xl font-black mb-2 tracking-tighter uppercase ${
-          winner === 'CREW' ? 'text-brand-primary' : 
-          winner === 'JESTER' ? 'text-yellow-500' :
-          'text-brand-danger'
-        }`}>
-          {winner === 'CREW' ? 'Agents Win' : winner === 'JESTER' ? 'Jester Wins' : 'Imposters Win'}
-        </h1>
-        <p className="text-slate-400 mb-8 text-lg">
-          {winner === 'CREW' ? 'The facility is secure.' : winner === 'JESTER' ? 'Chaos reigns supreme!' : 'Sabotage complete.'}
-        </p>
-
-        {/* Word Reveal */}
-        <div className="w-full bg-brand-card rounded-2xl p-4 border border-slate-800 mb-8">
-             <p className="text-xs uppercase text-slate-500 font-bold mb-1">The Secret Word Was</p>
-             <p className="text-2xl font-black text-white">{gameData.word}</p>
-        </div>
-
-        {/* Player Grid */}
-        <div className="w-full grid grid-cols-2 gap-3 mb-8">
-            {sortedPlayers.map(p => {
-                const isWinner = (winner === 'CREW' && !p.isImposter && p.extraRole !== 'JESTER') || 
-                                 (winner === 'IMPOSTER' && p.isImposter) ||
-                                 (winner === 'JESTER' && p.extraRole === 'JESTER');
-                
-                return (
-                    <div 
-                        key={p.id} 
-                        className={`relative flex items-center gap-3 p-3 rounded-xl border overflow-hidden ${
-                            p.isDead ? 'bg-slate-900/50 border-slate-800 opacity-50 grayscale' : 
-                            isWinner ? 'bg-brand-surface border-slate-600' : 
-                            'bg-brand-dark border-slate-800 opacity-60'
-                        }`}
-                    >
-                        {/* Generic Natural Avatar */}
-                        <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-b from-slate-700 to-slate-800 border border-slate-600 shadow-inner text-slate-200 font-bold text-sm">
-                           {p.name.charAt(0).toUpperCase()}
-                        </div>
-
-                        <div className="flex flex-col items-start overflow-hidden">
-                            <span className={`text-sm font-bold truncate w-full text-left ${p.isDead ? 'text-slate-500 line-through' : isWinner ? 'text-white' : 'text-slate-400'}`}>{p.name}</span>
-                            {/* Role Text - Jester takes priority over Agent/Imposter */}
-                            {p.extraRole === 'JESTER' ? (
-                              <span className="text-[10px] uppercase font-bold tracking-wider text-yellow-500">Jester</span>
-                            ) : (
-                              <span className={`text-[10px] uppercase font-bold tracking-wider ${p.isImposter ? 'text-rose-500' : 'text-blue-500'}`}>
-                                {p.isImposter ? 'Imposter' : 'Agent'}
-                              </span>
-                            )}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-3 pb-4">
-        <Button 
-            onClick={handleShare} 
-            variant="secondary"
-            disabled={isSharing}
-            className="flex-1 flex items-center justify-center gap-2"
+      {/* Scrollable Report Content */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 -mr-1 my-auto">
+        <div 
+          id="mission-report" 
+          className="bg-brand-dossier border border-brand-border rounded-3xl p-6 shadow-2xl text-center space-y-5"
         >
-            {isSharing ? (
-               <div className="animate-spin h-4 w-4 border-2 border-slate-400 rounded-full border-t-transparent"></div>
-            ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-            )}
-            Share
-        </Button>
-        <Button onClick={onReset} className="flex-[2] text-lg">
-            Play Again
-        </Button>
+          {/* Header Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-surface border border-brand-border text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+            <span className={`w-1.5 h-1.5 rounded-full ${
+              winner === 'CREW' ? 'bg-emerald-400' : winner === 'JESTER' ? 'bg-amber-400' : 'bg-brand-primary'
+            }`} />
+            After-Action Debrief #007
+          </div>
+
+          {/* Victor Icon & Title */}
+          <div>
+            <div className="my-2">
+              {winner === 'CREW' ? (
+                <CivilianIcon className="w-20 h-20 mx-auto" />
+              ) : winner === 'JESTER' ? (
+                <JesterIcon className="w-20 h-20 mx-auto" />
+              ) : (
+                <ImposterIcon className="w-20 h-20 mx-auto" />
+              )}
+            </div>
+
+            <h1 className={`text-3xl font-black uppercase tracking-tight mt-3 ${
+              winner === 'CREW' 
+                ? 'text-emerald-400' 
+                : winner === 'JESTER' 
+                  ? 'text-brand-warning' 
+                  : 'text-brand-primary'
+            }`}>
+              {winner === 'CREW' ? 'Agents Prevail' : winner === 'JESTER' ? 'Jester Ascendant' : 'Syndicate Wins'}
+            </h1>
+            <p className="text-xs text-brand-muted mt-1">
+              {winner === 'CREW' 
+                ? 'All infiltrators were successfully unmasked and eliminated.' 
+                : winner === 'JESTER' 
+                  ? 'The Jester tricked the squad into an erroneous execution!' 
+                  : 'The infiltrators remained hidden and compromised the mission.'}
+            </p>
+          </div>
+
+          {/* Secret Word Reveal Box */}
+          <div className="p-4 rounded-2xl bg-brand-surface border border-brand-border shadow-inner">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-brand-muted block mb-1">
+              Mission Objective Revealed
+            </span>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xs font-mono text-brand-muted">Category:</span>
+              <span className="text-xs font-bold text-brand-text">{gameData.category}</span>
+            </div>
+            <h2 className="text-2xl font-black text-white tracking-tight mt-1">
+              "{gameData.word}"
+            </h2>
+          </div>
+
+          {/* Operatives Unmasked Roster */}
+          <div className="space-y-2 text-left">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-brand-muted block px-1">
+              Operatives Dossier Breakdown
+            </span>
+
+            <div className="grid grid-cols-2 gap-2">
+              {sortedPlayers.map((p) => {
+                const isWinner = 
+                  (winner === 'CREW' && !p.isImposter && p.extraRole !== 'JESTER') ||
+                  (winner === 'IMPOSTER' && p.isImposter) ||
+                  (winner === 'JESTER' && p.extraRole === 'JESTER');
+
+                return (
+                  <div
+                    key={p.id}
+                    className={`p-3 rounded-2xl border transition-all ${
+                      p.isDead
+                        ? 'bg-brand-void/60 border-brand-border/40 opacity-50'
+                        : isWinner
+                          ? 'bg-brand-surface border-brand-borderLight ring-1 ring-white/10'
+                          : 'bg-brand-dossier border-brand-border opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className={`text-xs font-bold truncate ${
+                        p.isDead ? 'line-through text-brand-muted' : 'text-white'
+                      }`}>
+                        {p.name}
+                      </span>
+                      {isWinner && (
+                        <span className="text-[10px] text-brand-warning font-mono font-bold">★</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {p.extraRole === 'JESTER' ? (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                          Jester
+                        </span>
+                      ) : p.isImposter ? (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase bg-brand-primary/10 text-brand-primary border border-brand-primary/30">
+                          Imposter
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          Agent
+                        </span>
+                      )}
+
+                      {p.isDead && (
+                        <span className="text-[9px] font-mono text-brand-muted">
+                          (Ejected)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Bottom Action Bar */}
+      <footer className="pt-4 border-t border-brand-border/60 flex gap-2.5">
+        <Button 
+          onClick={handleShare} 
+          variant="secondary"
+          disabled={isSharing}
+          size="lg"
+          className="flex-1"
+        >
+          {isSharing ? (
+            <div className="animate-spin h-4 w-4 border-2 border-brand-text rounded-full border-t-transparent" />
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+              </svg>
+              <span>Export</span>
+            </div>
+          )}
+        </Button>
+
+        <Button 
+          onClick={() => {
+            haptics.impact();
+            onReset();
+          }} 
+          variant="primary"
+          size="lg"
+          className="flex-[2] shadow-xl"
+        >
+          <span>Deploy Next Mission</span>
+        </Button>
+      </footer>
     </div>
   );
 };

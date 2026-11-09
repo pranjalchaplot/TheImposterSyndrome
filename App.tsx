@@ -7,8 +7,9 @@ import { PlayPhase } from './components/PlayPhase';
 import { GameOverPhase } from './components/ResultPhase';
 import { generateGameTopic } from './services/geminiService';
 import backgroundVideo from './assets/videos/udaipur_b-roll.mp4';
-// Dynamically import all audio files from the bgm_radio folder
-const bgmModules = import.meta.glob('./assets/audios/bgm_radio/*.{wav,mp3,ogg}', { as: 'url', eager: true });
+
+// Dynamically import all audio files from bgm_radio folder using Vite's modern query format
+const bgmModules = import.meta.glob('./assets/audios/bgm_radio/*.{wav,mp3,ogg}', { query: '?url', import: 'default', eager: true });
 const BGM_TRACKS = Object.values(bgmModules) as string[];
 
 const App: React.FC = () => {
@@ -18,7 +19,7 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const [winner, setWinner] = useState<'CREW' | 'IMPOSTER' | 'JESTER' | null>(null);
 
-  // BGM Radio
+  // Espionage BGM Radio
   const [isMuted, setIsMuted] = useState<boolean>(() => {
     try { return localStorage.getItem('bgm_muted') === 'true'; } catch { return false; }
   });
@@ -27,18 +28,15 @@ const App: React.FC = () => {
   const trackIndexRef = useRef(0);
   const shuffledTracks = useRef<string[]>([...BGM_TRACKS].sort(() => Math.random() - 0.5));
 
-  // Extract exact filename from JS import path
+  // Extract clean track name from JS asset path
   const getTrackName = (src: string) => {
     try {
-      // Vite adds things like ?import, remove them
       let name = src.split('/').pop() || '';
       name = name.split('?')[0];
-      // Optionally decode URI component to handle "%20" etc
       name = decodeURIComponent(name);
-      // Remove extension
       return name.replace(/\.\w+$/, '');
     } catch {
-      return 'Unknown Track';
+      return 'Intercept Stream';
     }
   };
 
@@ -64,7 +62,7 @@ const App: React.FC = () => {
     setCurrentTrackName(getTrackName(src));
   }, []);
 
-  // Start playback on first user interaction (browsers block autoplay)
+  // Play audio on first user touch / pointerdown
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -93,17 +91,16 @@ const App: React.FC = () => {
     });
   };
 
-  // Initialize Game
+  // Initialize and Launch Game
   const startGame = async (names: string[], newSettings: GameSettings) => {
     setSettings(newSettings);
     setPhase(GamePhase.LOADING);
 
-    // Generate Content
+    // Generate Classified Word / Category
     const data = await generateGameTopic(newSettings.targetCategory, newSettings.enableAdultMode);
     setGameData(data);
 
-    // Assign Roles
-    // Fisher-Yates Shuffle indices
+    // Assign Roles with Fisher-Yates Shuffle
     const indices = Array.from({ length: names.length }, (_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -134,7 +131,7 @@ const App: React.FC = () => {
     setPhase(GamePhase.REVEAL);
   };
 
-  // Handle Player Death/Ejection directly from Play Phase
+  // Handle Player Elimination from Play Phase
   const handlePlayerEjection = (ejectedPlayerId: string) => {
     const ejectedPlayer = players.find(p => p.id === ejectedPlayerId);
     
@@ -143,9 +140,9 @@ const App: React.FC = () => {
     );
     setPlayers(updatedPlayers);
     
-    // Check Jester Win Condition FIRST
+    // Check Jester Win Condition
     if (ejectedPlayer?.extraRole === 'JESTER') {
-      setWinner('JESTER' as any); // Jester wins
+      setWinner('JESTER');
       setPhase(GamePhase.GAME_OVER);
       return;
     }
@@ -160,8 +157,7 @@ const App: React.FC = () => {
     } else if (activeImposters >= activeCrew) {
       setWinner('IMPOSTER');
       setPhase(GamePhase.GAME_OVER);
-    } 
-    // Else: Game continues, state updated, PlayPhase re-renders with dead player crossed out
+    }
   };
 
   const resetGame = () => {
@@ -172,23 +168,23 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-full w-full bg-brand-dark text-slate-200 overflow-hidden relative">
-      {/* Background Video Layer — portrait, centered, no crop */}
+    <div className="h-full w-full bg-brand-void text-brand-text overflow-hidden relative select-none">
+      {/* Ambient Surveillance Video Backdrop */}
       <video
         autoPlay
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-contain z-0 opacity-60 pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover z-0 opacity-20 pointer-events-none filter grayscale contrast-125 brightness-75"
         style={{ objectPosition: 'center center' }}
       >
         <source src={backgroundVideo} type="video/mp4" />
       </video>
 
-      {/* Dark overlay to dim the video */}
-      <div className="absolute inset-0 z-[1] bg-black/70 pointer-events-none" />
+      {/* Atmospheric Vignette Overlay */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-brand-void via-brand-void/85 to-brand-void/90 pointer-events-none" />
 
-      {/* BGM audio element — hidden, controlled via ref */}
+      {/* Hidden BGM Player */}
       <audio
         id="bgm-player-element"
         ref={audioRef}
@@ -198,19 +194,30 @@ const App: React.FC = () => {
         style={{ display: 'none' }}
       />
 
-      <div className="relative z-10 w-full h-full overflow-hidden">
-        {/* Loading Screen */}
+      {/* Primary Mobile Container with Safe Area Insets */}
+      <div className="relative z-10 w-full h-full overflow-hidden flex flex-col pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        
+        {/* Tactical Mission Loading Screen */}
         {phase === GamePhase.LOADING && (
-          <div className="h-full w-full flex flex-col items-center justify-center p-6 bg-transparent">
-            <div className="relative w-20 h-20">
-               <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
-               <div className="absolute inset-0 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-               <div className="absolute inset-4 bg-brand-card rounded-full flex items-center justify-center animate-pulse">
-                 <span className="text-brand-accent text-xs font-mono">AI</span>
-               </div>
+          <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+            <div className="relative w-20 h-20 mb-6">
+              <div className="absolute inset-0 border-2 border-brand-border rounded-full" />
+              <div className="absolute inset-0 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+              <div className="absolute inset-3 bg-brand-dossier rounded-full flex items-center justify-center border border-brand-border">
+                <span className="text-[10px] font-mono font-bold text-brand-primary animate-pulse">
+                  ENC
+                </span>
+              </div>
             </div>
-            <h2 className="text-xl font-bold text-white mt-8 animate-pulse">Constructing Mission</h2>
-            <p className="text-slate-500 text-sm mt-2">Encrypting data streams...</p>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-brand-muted block mb-1">
+              Neural Cryptographic Core
+            </span>
+            <h2 className="text-xl font-black text-white tracking-tight">
+              Synthesizing Directive
+            </h2>
+            <p className="text-xs text-brand-muted mt-1.5 max-w-xs font-mono">
+              Scrambling frequency channels and generating classified word bank...
+            </p>
           </div>
         )}
 
@@ -252,7 +259,6 @@ const App: React.FC = () => {
           />
         )}
       </div>
-
     </div>
   );
 };
